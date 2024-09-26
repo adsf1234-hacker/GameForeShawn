@@ -1,16 +1,18 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreDisplay = document.getElementById('scoreDisplay');
+const gameOverScreen = document.getElementById('gameOverScreen');
 
 canvas.width = window.innerWidth * 0.9;
 canvas.height = window.innerHeight * 0.9;
 
 let player = {
-    x: 50,
+    x: canvas.width / 2,
     y: canvas.height - 50,
-    width: 30,
-    height: 40,
-    speed: 5,
+    width: 40,
+    height: 60,
+    speedX: 0,
+    speedY: 0,
     lives: 3,
 };
 
@@ -21,21 +23,32 @@ function createEnemy() {
     const enemy = {
         x: Math.random() * (canvas.width - 50),
         y: 0,
-        width: 30,
-        height: 40,
-        speed: Math.random() * 3 + 1,
+        width: 40,
+        height: 60,
+        speedX: Math.random() * 2 + 1,
+        speedY: 0,
     };
     enemies.push(enemy);
 }
 
 function update() {
+    // Move players
+    player.x += player.speedX;
+    player.y += player.speedY;
+
+    // Keep player on screen
+    if (player.x < 0) player.x = canvas.width;
+    else if (player.x > canvas.width) player.x = 0;
+    if (player.y < 0) player.y = canvas.height;
+    else if (player.y > canvas.height) player.y = 0;
+
     // Move enemies
     enemies.forEach((enemy, index) => {
-        enemy.y += enemy.speed;
+        enemy.x -= enemy.speedX;
         
-        if (enemy.y > canvas.height) {
-            enemy.y = 0;
-            enemy.x = Math.random() * (canvas.width - 50);
+        if (enemy.x < 0) {
+            enemy.x = canvas.width;
+            enemy.y = Math.random() * (canvas.height - enemy.height);
         }
     });
 
@@ -53,16 +66,15 @@ function update() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Draw background
+    ctx.drawImage(new Image(), 0, 0, canvas.width, canvas.height);
+
     // Draw player
-    ctx.fillStyle = 'blue';
-    ctx.fillRect(player.x, player.y, player.width, player.height);
-    ctx.fillStyle = 'white';
-    ctx.fillText(`Lives: ${player.lives}`, 10, 30);
+    ctx.drawImage(new Image(), player.x, player.y, player.width, player.height);
 
     // Draw enemies
-    ctx.fillStyle = 'red';
     enemies.forEach(enemy => {
-        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        ctx.drawImage(new Image(), enemy.x, enemy.y, enemy.width, enemy.height);
     });
 
     // Update game state
@@ -87,18 +99,30 @@ function removeEnemy(index) {
 document.addEventListener('keydown', (event) => {
     switch(event.key) {
         case 'ArrowLeft':
-            player.x -= player.speed;
+            player.speedX = -5;
             break;
         case 'ArrowRight':
-            player.x += player.speed;
+            player.speedX = 5;
+            break;
+        case 'ArrowUp':
+            player.speedY = -5;
+            break;
+        case 'ArrowDown':
+            player.speedY = 5;
             break;
     }
+});
 
-    // Check if player goes off-screen
-    if (player.x < 0) {
-        player.x = canvas.width;
-    } else if (player.x > canvas.width) {
-        player.x = 0;
+document.addEventListener('keyup', (event) => {
+    switch(event.key) {
+        case 'ArrowLeft':
+        case 'ArrowRight':
+            player.speedX = 0;
+            break;
+        case 'ArrowUp':
+        case 'ArrowDown':
+            player.speedY = 0;
+            break;
     }
 });
 
@@ -113,3 +137,8 @@ draw();
 setInterval(() => {
     scoreDisplay.textContent = `Lives: ${player.lives}`;
 }, 16);
+
+// Game over logic
+if (player.lives === 0) {
+    gameOverScreen.style.display = 'block';
+}
